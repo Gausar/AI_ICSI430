@@ -1,0 +1,206 @@
+hw1 notes
+
+Thing()
+- can be alive or not
+- subclasses include Agents, Food, and Water
+- Agents are alive
+- Food and Water - not so much
+
+Agent(Thing)
+- are a subclass of Things
+- self.program - a program property (not method!) which can respond to percepts
+- self.bump - true if agent bumped into a wall
+- self.alive - true if alive
+- self.holding - list of items (Things) held by the agent
+- self.performance - score showing how well the agent is doing
+- can_grab() - method if agent can grab (Thing) which would then be added to holding list
+
+
+programs for Agents:
+- TableDrivenAgentProgram(table) - uses table to map percepts to actions
+- RandomAgentProgram(actions) - picks an action at random from given list
+- SimpleReflexAgentProgram(rules, interpret_input) - uses rules to map percept to action
+- ModelBasedReflexAgentProgram(rules, update_state, model) - uses rules to map
+  				      both state and percept to action.
+
+loc_A = (0,0)  ## used in Vacuum world
+loc_B = (1,0)
+
+Vacuum Agents:
+- TableDrivenVacuumAgent() - uses TableDrivenAgentProgram with given table
+- ReflexVacuumAgent() - uses hardwired reflex program
+- ModelBasedVacuumAgent() - keeps track of what locations are clean or dirty
+
+==========================================================
+
+Environment()
+- keeps track Things of and Agents (which are themselves Things)
+Methods
+- thing_classes() - list of classes that can go into environment
+- percept(agent) - implemented by subclass
+- execute_action(agent, action) - implemented by subclass
+- default_location(thing)
+- exogenous_change() - for spontaneous events in the world
+- is_done() - stop when no living agents
+- step() - add actions from percepts and then execute all pending actions for one step
+- run(steps=1000) - run steps until done or reach limit
+- list_things_at(location, thingclass) - return list of stuff at given location
+- some_things_at(location, thingclass) - true if there is something at location
+- add_thing(thing, location) - add thing if not already there (in self.things)
+- delete_thing(thing) - remove thing from environment.  if also agent, remove that too
+
+
+Direction()
+__add__(heading) method: (overloads the plus operator)
+------------------------------------------------------
+heading is a string
+direction + heading = direction 
+right + right = down
+right + left = up
+left + right = up
+left + left = down
+up + right = right
+up + left = left
+down + right = left
+down + left = right
+
+move_forward(from_location) method:
+location is an (x,y) pair
+returns location with of new coordinate
+R, L, U, or D
+
+XYEnvironment(Environment)
+self.width
+self.height
+self.observers - list of agents
+self.x_start, self.y_start - (0,0) upper left coordinate
+self.x_end, self.y_end - (self.width, self.height) lower right coordinate
+
+__init__(width,height) - constructor method
+perceptible_distance = 1
+things_near(location, radius): method
+  radius defaults to perceptible_distance
+percept(agent): method
+  things_near(agent.location)
+execute_action(agent,action): method
+  agent.bump = False			      
+  actions include TurnRight, TurnLeft, Forward (which resets agent.bump), Release
+  Grab action is commented out
+default_location(thing): method
+  random location in environment grid
+move_to(thing, destination): method
+  thing.bump is true if destination is of type Obstacle
+  call observers thing_moved() **** NOT DEFINED ****
+  self.delete_thing and self.add_thing(t, destination) (update location of thing)
+  return thing.bump
+add_thing(thing, location, exclude_duplicate_class_items): method
+is_bounds(location): method
+  confirms location is within x,y grid
+random_location_inbounds(): method
+  returns a random location that is within x,y grid
+delete_thing(thing): method
+  deletes thing and everything it is holding (if agent)
+add_walls(): method
+  surrounds grid with Walls (which are Obstacles)
+add_observer(observer): method
+  updated by move_to and add_thing
+turn_heading(heading, inc): method
+  call utils.turn_heading [which is different from Direction conventions]
+
+Obstacle(Thing) class
+
+Wall(Obstacle)
+  used to surround 2d Grid
+
+==========================================================
+
+GraphicEnvironment(XYEnvironment): class
+__init__(width, height, boundary, color, display) - constructor method
+  self.grid = BlockGrid(width, height, fill(200,200,200) [grey]
+  self.colors = color
+  self.grid.show() if display
+get_world(): method
+  returns all the items in the world using list_things_at(location)
+run(steps, delay): method
+  runs the steps, and updates the GUI with sleep(delay)
+update(delay): method
+  updates the GUI with sleep(delay)
+reveal(): method
+  displays the BlockGrid
+draw_world(): method
+  world = get_world() - then loops through to display each cell
+conceal(): method
+  hides the BlockGrid
+
+
+ContinuousWorld(Environment) class
+__init__(width, height) - constructor method
+add_obstracle(coordinates): method
+  PolygonObstracle
+
+PolygonObstacle(Obstacle): class
+__init__(coordinates).
+  self.coordinates
+
+==========================================================
+## Vacuum environment
+
+Dirt(Thing): class
+
+VacuumEnvironment(XYEnvironment):
+__init__(width,height):
+  self.add_walls()
+
+thing_classes(): method
+  return Wall, Dirt, ReflexVacuumAgent, RandomVacuumAgent,
+  	 TableDrivenVacuumAgent, ModelBasedVacuumAgent
+
+percept(agent): method
+  status is self.some_things_at(agent.location) == Dirt
+  returns (status, bump)
+
+execute_action(agent,action): method
+  'Suck' remove Dirt
+  else super().execute_action(agent.action)
+
+
+TrivialVacuumEnvironment(Environment): class
+__init__() constructor method
+  makes A and B randomly dirty or clean
+
+thing_classes(): method
+  return Wall, Dirt, ReflexVacuumAgent, RandomVacuumAgent,
+  	 TableDrivenVacuumAgent, ModelBasedVacuumAgent
+
+percept(agent): method
+  returns self.status for agent.location
+
+execute_action(agent, action): method
+  Right, Left, Suck
+
+default_location(thing): method
+  either loc_A or loc_b
+
+==========================================================
+## Wumpus world
+
+Gold, Bump, Glitter, Pit, Breeze, Arrow, Scream, Wumpus, Stench, Explorer
+
+class WumpusEnvironment(XYEnvironment)
+
+__init__()
+init_world(program)
+get_world()
+percepts_from()
+percept(agent)
+execute_action(agent,action)
+in_danger()
+is_done()
+
+==========================================================
+## other stuff
+
+compare_agents(EnvFactory, AgentFactories, n=10, steps)
+
+test_Agent(AgentFactory, steps, envs)
+  called by compare_agents
